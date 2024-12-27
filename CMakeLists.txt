@@ -14,6 +14,7 @@ project(spdlog VERSION ${SPDLOG_VERSION} LANGUAGES CXX)
 message(STATUS "Build spdlog: ${SPDLOG_VERSION}")
 
 include(GNUInstallDirs)
+set(SPDLOG_SHARED_LIB OFF)
 
 # ---------------------------------------------------------------------------------------
 # Set default build to release
@@ -61,7 +62,7 @@ option(SPDLOG_BUILD_SHARED "Build shared library" OFF)
 option(SPDLOG_ENABLE_PCH "Build static or shared library using precompiled header to speed up compilation time" OFF)
 
 # build position independent code
-option(SPDLOG_BUILD_PIC "Build position independent code (-fPIC)" OFF)
+option(SPDLOG_BUILD_PIC "Build position independent code (-fPIC)" ON)
 
 # example options
 option(SPDLOG_BUILD_EXAMPLE "Build example" ${SPDLOG_MASTER_PROJECT})
@@ -108,15 +109,15 @@ endif()
 if(WIN32)
     option(SPDLOG_WCHAR_SUPPORT "Support wchar api" OFF)
     option(SPDLOG_WCHAR_FILENAMES "Support wchar filenames" OFF)
-    option(SPDLOG_WCHAR_CONSOLE "Support wchar output to console" OFF)
+    option(SPDLOG_WCHAR_CONSOLE "Support wchar output to console" OFF)    
 else()
     set(SPDLOG_WCHAR_SUPPORT OFF CACHE BOOL "non supported option" FORCE)
     set(SPDLOG_WCHAR_FILENAMES OFF CACHE BOOL "non supported option" FORCE)
     set(SPDLOG_WCHAR_CONSOLE OFF CACHE BOOL "non supported option" FORCE)
 endif()
 
-if(MSVC)
-    option(SPDLOG_MSVC_UTF8 "Enable/disable msvc /utf-8 flag required by fmt lib" ON)
+if(MSVC)    
+    option(SPDLOG_MSVC_UTF8 "Enable/disable msvc /utf-8 flag required by fmt lib" ON)   
 endif()
 
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
@@ -149,6 +150,7 @@ endif()
 
 find_package(Threads REQUIRED)
 message(STATUS "Build type: " ${CMAKE_BUILD_TYPE})
+message(STATUS "CXX flags: " ${CMAKE_CXX_FLAGS})
 # ---------------------------------------------------------------------------------------
 # Static/Shared library
 # ---------------------------------------------------------------------------------------
@@ -163,7 +165,7 @@ if(SPDLOG_BUILD_SHARED OR BUILD_SHARED_LIBS)
         configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/version.rc.in ${CMAKE_CURRENT_BINARY_DIR}/version.rc @ONLY)
         list(APPEND SPDLOG_SRCS ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
     endif()
-    add_library(spdlog SHARED ${SPDLOG_SRCS} ${SPDLOG_ALL_HEADERS})
+    add_library(spdlog STATIC ${SPDLOG_SRCS} ${SPDLOG_ALL_HEADERS})
     target_compile_definitions(spdlog PUBLIC SPDLOG_SHARED_LIB)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         target_compile_options(spdlog PUBLIC $<$<AND:$<CXX_COMPILER_ID:MSVC>,$<NOT:$<COMPILE_LANGUAGE:CUDA>>>:/wd4251
@@ -239,20 +241,6 @@ if(SPDLOG_FMT_EXTERNAL OR SPDLOG_FMT_EXTERNAL_HO)
 endif()
 
 # ---------------------------------------------------------------------------------------
-# Check if fwrite_unlocked/_fwrite_nolock is available
-# ---------------------------------------------------------------------------------------
-include(CheckSymbolExists)
-if(WIN32)
-    check_symbol_exists(_fwrite_nolock "stdio.h" HAVE_FWRITE_UNLOCKED)
-else ()
-    check_symbol_exists(fwrite_unlocked "stdio.h" HAVE_FWRITE_UNLOCKED)
-endif()
-if(HAVE_FWRITE_UNLOCKED)
-    target_compile_definitions(spdlog PRIVATE SPDLOG_FWRITE_UNLOCKED)
-    target_compile_definitions(spdlog_header_only INTERFACE SPDLOG_FWRITE_UNLOCKED)
-endif()
-
-# ---------------------------------------------------------------------------------------
 # Add required libraries for Android CMake build
 # ---------------------------------------------------------------------------------------
 if(ANDROID)
@@ -290,9 +278,9 @@ if(MSVC)
     if(SPDLOG_MSVC_UTF8)
         # fmtlib requires the /utf-8 flag when building with msvc.
 	    # see https://github.com/fmtlib/fmt/pull/4159 on the purpose of the additional
-        # "$<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:MSVC>>"
+        # "$<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:MSVC>>" 
 	    target_compile_options(spdlog PUBLIC $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:MSVC>>:/utf-8>)
-	    target_compile_options(spdlog_header_only INTERFACE $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:MSVC>>:/utf-8>)
+	    target_compile_options(spdlog_header_only INTERFACE $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:MSVC>>:/utf-8>)    
      endif()
 endif()
 
